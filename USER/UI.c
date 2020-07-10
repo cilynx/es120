@@ -149,8 +149,7 @@ void Clear_Screw(void)
 void Show_ScrewMove(u8 status)//Screw down status = 0 down£¬1up
 {
     u8 *ptr;
-    static u8 i = 1,step = 0;
-    
+    static u8 i = 1,step = 0;    
 //    u8 str_test[5] = {0};//2017.8.2
     
     if(gScrew_position != i) i = gScrew_position;

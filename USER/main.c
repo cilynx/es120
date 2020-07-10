@@ -63,7 +63,7 @@ void Setup(void)
     Set_gKey(NO_KEY);
     Start_Watchdog(3000);
    
-    if(Hardware_version())      
+    if(Hardware_version())//Ó²¼þ°æ±¾ÅÐ¶Ï     
     {
         version_number = 0;//1.4°æ±¾
     }

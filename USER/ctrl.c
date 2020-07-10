@@ -20,7 +20,7 @@ History:
 #include "string.h"
 
 
-INFO_SYS info_def = {"1.7",0,0,0};//版本1.7,两度转动,1级扭力//修改版本还需要disk.c中的Def_set[]数组
+INFO_SYS info_def = {"1.8",0,0,0};//版本1.8,两度转动,1级扭力//修改版本还需要disk.c中的Def_set[]数组
 u8 gMode = IDLE_MOD;//初始状态
 u8 gPre_Mode;
 u32 gMoto_timecnt;
@@ -33,6 +33,7 @@ u16 The_Current = 0;//2017.8.1当前电流
 extern vu32 Timer_Counter;
 extern u8* SD_IDF;
 extern u8* CONSULT;//2017.8.2
+extern u8 HZ16X16[];
 /*******************************************************************************
 函数名: Hardware_version
 函数作用:硬件版本判断
@@ -160,21 +161,6 @@ void TorqueLv_Set(void)
         Clear_Screen();
     }
 }
-const u8 HZ16X16[]=	//超时提醒  
-{
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    0x00,0xF0,0x08,0x04,0x04,0x04,0x08,0xF0,0x00,0x00,0x80,0x00,0x00,0x00,0x80,0x00,
-    0x00,0x00,0x80,0x80,0x80,0x00,0x00,0x00,0x80,0x00,0x00,0x80,0x00,0x00,0x80,0xE0,
-    0x80,0x80,0x00,0x00,0x00,0xA0,0x00,0x00,0x80,0x00,0x80,0x00,0x80,0x00,0x00,0x00,
-    0x00,0x80,0x80,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0x40,0x20,0x10,
-    0x08,0xF4,0x04,0x08,0x10,0x20,0x40,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    0x00,0x07,0x08,0x10,0x10,0x10,0x08,0x07,0x00,0x00,0x01,0x06,0x18,0x06,0x01,0x00,
-    0x00,0x0F,0x14,0x14,0x14,0x17,0x00,0x00,0x00,0x1F,0x01,0x00,0x00,0x00,0x00,0x1F,
-    0x10,0x18,0x00,0x00,0x00,0x1F,0x00,0x00,0x00,0x1F,0x00,0x1F,0x00,0x1F,0x00,0x00,
-    0x0F,0x14,0x14,0x14,0x17,0x00,0x00,0x00,0x00,0x0C,0x12,0x11,0x10,0x10,0x10,0x10,
-    0x10,0x15,0x10,0x10,0x10,0x10,0x10,0x10,0x11,0x12,0x0C,0x00,0x00,0x00,0x00,0x00,
-};
 
 /*******************************************************************************
  函数名: Motor_Process
@@ -268,7 +254,6 @@ float Motor_Process(void)
             gCur_timer = Timer_StartValue();//电机转动累计时间的初始值
             gLast_timer = gCur_timer;
         }
-
         /*2017.8.1取消无角度变化长按保存上一次转动方向和速度*/
 //        if(run_flag == 0 && gTimer[4] == 0 && (fixed_flag == 0)) {
 //            fixed_dir = 1;//固定模式
@@ -324,16 +309,58 @@ float Motor_Process(void)
         }
         //堵转的最大电流计算
         if(angle >0) current_limt = 1100;//反转为最大
-        else if(info_def.torque_level != 0 && info_def.torque_level != 0)  current_limt = (11 - ((info_def.torque_level - 1))*3)*last_pwm;// 
+        else if(info_def.torque_level != 1 && info_def.torque_level != 0)  current_limt = (11 - ((info_def.torque_level - 2))*3)*last_pwm;//
+        else if(info_def.torque_level == 1)//正转时P挡扭矩随角度增大而增大
+        {
+            if(temp_angle >= (info_def.start_angle + 60))  current_limt = 1100;//一次转动超过60°升到最大扭矩
+            else  if(temp_angle >= 80)
+            {
+                current_limt = 1100;
+            }
+            else
+            {
+                current_limt = temp_angle * 10 + 300;//P档角度增大1°堵转电流增加10mA
+            }
+        } 
         else current_limt = 1100;     
         //堵转的最大电流累计
         The_Current = (60000*Get_AvgAdc(0)/4096);//当前电流
         if(The_Current > current_limt)overcurrent_cnt++;
         else overcurrent_cnt = 0;
         //各档位的堵转的最大电流累计数    
-
-        if(info_def.torque_level != 0)  limt_cnt = 40 + (info_def.torque_level - 1)*20;//其他挡位电流计算
-        else  limt_cnt = 100;      
+        if(info_def.torque_level == 1)//在P挡位的时候
+        {
+          if(temp_angle >= (info_def.start_angle + 60))  limt_cnt = 100;//一次转动超过60°升到最大扭矩
+          else {
+                  if(temp_angle - info_def.start_angle <20)//0~19度
+                  {
+                      limt_cnt = 40;
+                  }
+                  else
+                  {
+                      if(temp_angle - info_def.start_angle <40)//20~39
+                      {
+                          limt_cnt = 40;
+                      }
+                      else
+                      {
+                          if(temp_angle - info_def.start_angle <60)//40~59
+                          {
+                              limt_cnt = 60;
+                          }
+                          else//60~80
+                          {
+                              limt_cnt = 100;
+                          }
+                      }
+                  }
+               }
+        }
+        else//除了P以外其他挡位
+        {
+          if(info_def.torque_level != 0)  limt_cnt = 40 + (info_def.torque_level - 2)*20;//其他挡位电流计算
+          else  limt_cnt = 100;
+        }        
 
         if((gTimer[0] == 0) && (overcurrent_cnt > limt_cnt)) {//堵转处理,电机刹车,3s内不转动电机，转动电机后200ms不升压。
             Motor_Brake();
@@ -463,7 +490,7 @@ void Mode_Switching(void)
         Stand_By();
         break;
     case SET_MOD:   //设置模式
-        TorqueLv_Set();//挡位设置
+        TorqueLv_Set();//扭矩等级设置
         break;
     case LP_MOD:    //低电压模式
         Low_Power(); //显示低电压警告

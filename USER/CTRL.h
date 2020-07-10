@@ -13,10 +13,10 @@ History:
 #define FULL_SPEED_PWM 2400
 #define LOW_SPEED_PWM 0
 #define MAX_PWM 100
-#define MAX_ANGLE       80 //最大角度范围
-#define MAX_TORQUE      5  //最大挡位
+#define MAX_ANGLE       80      //最大角度范围
+#define MAX_TORQUE      6       //最大挡位
 
-#define MAX_RUNTIME     6000   //最大持续转动时间  /100   s
+#define MAX_RUNTIME     6000   //最大持续转动时间  n/100s
 
 extern INFO_SYS info_def;
 
