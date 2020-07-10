@@ -1,11 +1,11 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
 File Name :      Hardware.c
-Version :
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
+2017/06/20       新增硬件版本判断功能;
 *******************************************************************************/
 #include "STM32F10x.h"
 #include "app.h"
@@ -16,7 +16,7 @@ History:
 #include "Disk.h"
 #include "Adc.h"
 #include "L3G4200D.h"
-
+#include "iic.h"
 
 
 u32 gKey_state;
@@ -26,8 +26,6 @@ volatile u32 gTimer[6];
 vu32 Timer_Counter;
 vu32 Moto_TimerCounter;
 vu8 gKey_Press = 0;
-
-extern u8 Version_jud;
 
 #define KEY_READ     (GPIOB->IDR & GPIO_Pin_7) //按下为1  1.4版本
 #define KEY_READ_1   (GPIOA->IDR & GPIO_Pin_1) //按下为1  1.3版本
@@ -381,6 +379,7 @@ void Key_Read( void )
 *******************************************************************************/
 void TIM2_IRQHandler(void)
 {
+    /*10ms一个周期*/
     static u8 sk = 0; //scan key
     u8 i;
     TIM_ClearITPendingBit(TIM2, TIM_IT_Update);	   // 中断标志复位
@@ -398,7 +397,7 @@ void TIM2_IRQHandler(void)
         if(KEY_READ_1)  gKey_Press = 1;
         else            gKey_Press = 0;
     }
-
+    
     for(i=0; i<6; i++) if(gTimer[i] > 0) gTimer[i]--;
     Timer_Counter++;
 }

@@ -1,11 +1,11 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
 File Name :      Hardware.h
-Version :
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
+2017/06/20       新增硬件版本判断功能;
 *******************************************************************************/
 #ifndef _HARDWARE_H
 #define _HARDWARE_H

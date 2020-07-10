@@ -1,11 +1,10 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
-File Name :      Sys.c
-Version :
+File Name :      sys.c
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
 *******************************************************************************/
 #include "App.h"
 #include "sys.h"
@@ -28,6 +27,19 @@ void NVIC_Configuration(void)
     NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
+	
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn; 
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3; 
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; 
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; 
+    NVIC_Init(&NVIC_InitStructure);          // Enable the DMA Interrupt 
+    
+  /* Configure and enable ADC interrupt */
+  NVIC_InitStructure.NVIC_IRQChannel = ADC1_2_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);	
 }
 
 /*******************************************************************************
@@ -48,6 +60,9 @@ void RCC_Config(void)
     while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET) {}
     RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
     while(RCC_GetSYSCLKSource() != 0x08) {}
+
+    RCC_AHBPeriphClockCmd  (RCC_AHBPeriph_SRAM   | RCC_AHBPeriph_DMA1 ,
+                            ENABLE);
 
     RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_Div1);       // USBCLK = 48MHz
 }

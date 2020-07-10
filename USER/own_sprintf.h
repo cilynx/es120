@@ -1,12 +1,10 @@
-/********************* (C) COPYRIGHT 2017 e-Design Co.,Ltd. **********************
-File Name :      own_sprintf.h
-Version :        S100 APP Ver 2.13   
+/********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
+File Name :      own_sprintf.c
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2017/01/17
+Author :         Ning
+Data:            2017/11/22
 History:
-2015/07/07   统一命名；
-2017/01/17   增加文件
 *******************************************************************************/
 
 

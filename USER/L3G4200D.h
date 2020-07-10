@@ -1,11 +1,10 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
 File Name :      L3G4200D.h
-Version :
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
 *******************************************************************************/
 #ifndef __L3G4200D_H
 #define __L3G4200D_H
@@ -50,18 +49,6 @@ History:
 void Init_L3G4200D(void);
 void READ_L3G4200D(void);
 float Get_Angle(void);
-
-void I2C_delay(void);
-void delay5ms(void);
-u8 I2C_Start(void);
-void I2C_Stop(void);
-void I2C_Ack(void);
-void I2C_NoAck(void);
-u8 I2C_WaitAck(void);
-void I2C_SendByte(u8 SendByte);
-u8 I2C_RadeByte(void);
-u8 Single_Write(u8 SlaveAddress,u8 REG_Address,u8 REG_data);
-u8 Single_Read(u8 SlaveAddress,u8 REG_Address);
 
 #endif
 /******************************** END OF FILE *********************************/

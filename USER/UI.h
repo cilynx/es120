@@ -1,11 +1,10 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
 File Name :      UI.h
-Version :
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
-History:
-
+Author :         Ning
+Data:            2017/11/22
+History:   
 *******************************************************************************/
 #include "stm32f10x.h"
 

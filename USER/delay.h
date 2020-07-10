@@ -1,11 +1,10 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
-File Name :      Delay.h
-Version :
+File Name :      delay.h
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
 *******************************************************************************/
 #ifndef __DELAY_H__
 #define __DELAY_H__ 			   

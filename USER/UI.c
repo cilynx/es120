@@ -1,11 +1,13 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
 File Name :      UI.c
-Version :
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
-History:
-
+Author :         Ning
+Data:            2017/11/22
+History:   
+2017/04/01       显示挡位在转动和待机时;
+2017/08/01       显示转动时电流大小;
+2017/09/10       显示充电时充电进度;
 *******************************************************************************/
 #include "Oled.h"
 #include "Oledfont.h"
@@ -18,7 +20,7 @@ History:
 
 u8 gScrew_position = 17;/*螺丝图像显示位置*/
 extern u16 The_Current;//2017.8.1当前电流
-
+extern vu16 AWD_entry;
 /*******************************************************************************
 函数名: Clear_Screen
 函数作用:清屏
@@ -113,7 +115,7 @@ void Show_BatV(u8 step,u8 Charging)
         ptr = (u8*)BAT_STAT + 20*step;
         Oled_DrawArea(0,0,10,16,ptr);
     } else if(Charging == 1) { //充电
-        ptr = (u8*)BAT_STAT + 20*(11 + step);
+        ptr = (u8*)BAT_STAT + 20*(10 + step);
         Oled_DrawArea(0,0,10,16,ptr);
     } else if(Charging == 2) {
         ptr = (u8*)BAT_STAT + 20*21;
@@ -140,6 +142,7 @@ void Clear_Screw(void)
         Oled_DrawArea(11,i * 8,81,8,data);//92 -16
     }
 }
+
 /*******************************************************************************
 函数名: Show_ScrewMove
 函数作用:动态显示螺丝图片
@@ -149,7 +152,8 @@ void Clear_Screw(void)
 void Show_ScrewMove(u8 status)//Screw down status = 0 down，1up
 {
     u8 *ptr;
-    static u8 i = 1,step = 0;    
+    static u8 i = 1,step = 0;
+ 
 //    u8 str_test[5] = {0};//2017.8.2
     
     if(gScrew_position != i) i = gScrew_position;
@@ -170,8 +174,9 @@ void Show_ScrewMove(u8 status)//Screw down status = 0 down，1up
 //    ptr = (u8*)CONSULT+8;
 //    Oled_DrawArea(92,0,4,16,ptr);//底座
     /*显示电流2017.8.2*/
-//    sprintf((char*)str_test, "%d", The_Current);  //2017.8.2
-//    Display_Str(5, 5, (char*)str_test);
+//    sprintf((char*)str_test, "%2d %3d", Get_Adc(2), AWD_entry);  //2017.8.2  ////
+//    Display_Str(3, 5, (char*)str_test);
+    
     
     ptr = (u8*)LEVEL_IDF + 11*2*info_def.torque_level;
     Oled_DrawArea(0,0,11,16,ptr);//挡位
@@ -183,7 +188,7 @@ void Show_ScrewMove(u8 status)//Screw down status = 0 down，1up
     /*2017.8.1当前电流进度条*/
     if(step%2)
     {
-        if(The_Current>1100)//超过堵转电流
+        if(The_Current>MAX_ROTATE_I)//超过堵转电流1200
         {
             ptr = (u8*)I_Size + 56;//电流大小显示条
             Oled_DrawArea(93,0,2,16,ptr);
@@ -193,14 +198,14 @@ void Show_ScrewMove(u8 status)//Screw down status = 0 down，1up
             ptr = (u8*)I_Size;
             Oled_DrawArea(93,0,2,16,ptr);
         }
-        else if(The_Current < 300)//1~300mA
-        {
-            ptr = (u8*)I_Size + (The_Current/50*4 + 4);
-            Oled_DrawArea(93,0,2,16,ptr);
-        }
+//        else if(The_Current < 300)//1~300mA
+//        {
+//            ptr = (u8*)I_Size + (The_Current/50*4 + 4);
+//            Oled_DrawArea(93,0,2,16,ptr);
+//        }
         else
         {
-            ptr = (u8*)I_Size + 24 + ((The_Current - 300)/100*4);   
+            ptr = (u8*)I_Size + (The_Current/85*4);   
             Oled_DrawArea(93,0,2,16,ptr);
         }
     }
@@ -214,9 +219,8 @@ void Show_ScrewMove(u8 status)//Screw down status = 0 down，1up
 void Show_Screw(u8 mode)
 {
     u8 *ptr;
- 
     if(mode)
-    {
+    {  
         ptr = (u8*)LEVEL_IDF + 11*2*info_def.torque_level;
         Oled_DrawArea(0,0,11,16,ptr);//挡位
         ptr = (u8*)CONSULT + 8;
@@ -229,9 +233,12 @@ void Show_Screw(u8 mode)
         ptr = (u8*)CONSULT;
         Oled_DrawArea(92,0,4,16,ptr);//底座
     }
-    ptr = (u8*)SD_IDF;
-    Oled_DrawArea(27,0,32,16,ptr);//螺丝
-    gScrew_position = 17;    
+    if(mode != 2)
+    {
+        ptr = (u8*)SD_IDF;
+        Oled_DrawArea(27,0,32,16,ptr);//螺丝
+        gScrew_position = 17;  
+    } 
 }
 /*******************************************************************************
 函数名: Print_Integer

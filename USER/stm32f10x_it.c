@@ -25,7 +25,7 @@
 #include "stm32f10x_it.h"
 #include "stm32f10x_it.h"
 #include "OLED.h"
-
+#include "adc.h"
 
 void NMI_Handler(void)
 {
@@ -75,6 +75,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
 }
+
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
     USB_Istr();

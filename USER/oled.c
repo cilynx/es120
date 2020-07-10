@@ -1,181 +1,19 @@
 /********************* (C) COPYRIGHT 2016 e-Design Co.,Ltd. ********************
-File Name :      Oled.c
-Version :
+File Name :      olde.c
+Version :        1.7a
 Description:
-Author :         Celery
-Data:            2016/12/22
+Author :         Ning
+Data:            2017/11/22
 History:
-
+2017/06/20       新增不同硬件版本下的定义配置;
+2017/10/21       优化汇总iic配置;    
 *******************************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include "Oled.h"
 #include "HARDWARE.h"
 #include "Delay.h"
-
-#define OLED_VCC_ON()       GPIO_SetBits(GPIOB,GPIO_Pin_4)
-#define OLED_RST_PIN        GPIO_Pin_0     //PB0
-#define OLED_RST()          GPIO_ResetBits(GPIOB, OLED_RST_PIN)
-#define OLED_ACT()          GPIO_SetBits  (GPIOB, OLED_RST_PIN)
-
-extern u8 version_number;//版本标志
-extern u8 Version_jud;//版本判断
-
-void IIC_Start(void)
-{
-    if(version_number)
-    {
-        OLED_SCLK_Set_1() ;
-        OLED_SDIN_Set_1();
-        OLED_SDIN_Clr_1();
-        OLED_SCLK_Clr_1();
-    }
-    else
-    {
-        OLED_SCLK_Set() ;
-        OLED_SDIN_Set();
-        OLED_SDIN_Clr();
-        OLED_SCLK_Clr();
-    }
-}
-
-/**********************************************
-//IIC Stop
-**********************************************/
-void IIC_Stop(void)
-{
-    if(version_number)
-    {
-        OLED_SCLK_Clr_1();
-        OLED_SDIN_Clr_1();
-        OLED_SDIN_Set_1();
-        OLED_SCLK_Set_1();
-    }
-    else
-    {
-        OLED_SCLK_Clr();
-        OLED_SDIN_Clr();
-        OLED_SDIN_Set();
-        OLED_SCLK_Set();
-    }
-}
-/**********************************************
-// IIC Write byte
-**********************************************/
-
-void Write_IIC_Byte(unsigned char IIC_Byte)
-{
-    unsigned char i;
-    
-    if(version_number)//1.3版本
-    {
-        for(i=0; i<8; i++) {
-            OLED_SCLK_Clr_1();
-            if(IIC_Byte & 0x80) {
-                OLED_SDIN_Set_1();
-            } else OLED_SDIN_Clr_1();
-            IIC_Byte<<=1;
-            OLED_SCLK_Set_1();
-        }
-        OLED_SCLK_Clr_1();
-        OLED_SCLK_Set_1() ;
-    }
-    else//1.4版本
-    {
-        for(i=0; i<8; i++) {
-            OLED_SCLK_Clr();//接口时钟信号
-            if(IIC_Byte & 0x80) {
-                OLED_SDIN_Set();//接口数据信号
-            } else OLED_SDIN_Clr();
-            IIC_Byte<<=1;
-            OLED_SCLK_Set();
-        }
-
-        OLED_SCLK_Clr();
-        OLED_SCLK_Set() ;
-    }
-}
-/**********************************************
-// IIC Write Command
-**********************************************/
-void Write_IIC_Command(unsigned char IIC_Command)
-{
-    IIC_Start();
-    Write_IIC_Byte(0x78);            //Slave address,SA0=0
-    Write_IIC_Byte(0x00);			//write command
-    Write_IIC_Byte(IIC_Command);
-    IIC_Stop();
-}
-/**********************************************
-// IIC Write Data
-**********************************************/
-void Write_IIC_Data(unsigned char IIC_Data)
-{
-    IIC_Start();
-    Write_IIC_Byte(0x78);			//D/C#=0; R/W#=0
-    Write_IIC_Byte(0x40);			//write data
-    Write_IIC_Byte(IIC_Data);
-    IIC_Stop();
-}
-//等待应答信号到来
-//返回值：1，接收应答失败
-//        0，接收应答成功
-u8 IIC_Wait_Ack(void)//等待从机发送应答信号给主机
-{
-    u8 ucErrTime=0;
-    OLED_SDIN_Clr();Delay_Ms(2);
-      
-    OLED_SCLK_Clr();Delay_Ms(2);
-    while(SDA)
-    {
-        ucErrTime++;
-        if(ucErrTime>250)
-        {
-            IIC_Stop();
-            return 1;
-        }
-    }
-    OLED_SCLK_Set();//时钟输出0   
-    return 0;  
-} 
-
-u8 MPU6050_ReadI2C(u8 REG_Address)
-{
-    u8 REG_data;
-    IIC_Start();                  //起始信号
-    Write_IIC_Byte(0xD0);  //发送设备地址+写信号
-    REG_data=IIC_Wait_Ack();   
-    Write_IIC_Byte(REG_Address);   //发送存储单元地址，从0开始
-    REG_data=IIC_Wait_Ack();   
-    IIC_Start();                  //起始信号
-    Write_IIC_Byte(0xD0+1);//发送设备地址+读信号
-    REG_data=IIC_Wait_Ack();   
-    REG_data=IIC_read_byte(); //读取一个字节,不继续再读,发送NAK,读出寄存器数据
-    IIC_Stop();                  //停止信号
-return REG_data;
-}
-/*******************************************************************************
-函数名: IIC_read_byte
-函数作用:IIC读取一个byte
-输入参数:NULL
-返回参数:byte
-*******************************************************************************/
-u8 IIC_read_byte()
-{//从IIC总线读取一个字节的数据函数
-    u8 i;
-    u8 Data; //定义一个缓冲寄存器。
-    for(i=0;i<8;i++)//有8位数据
-    {
-        OLED_SCLK_Set();//拉高时钟线，为读取下一位数据做准备。
-        Data=Data<<1;//将缓冲字节的数据左移一位，准备读取数据。
-
-        if(SDA)//如果数据线为高平电平。
-        Data=Data|0x1;//则给缓冲字节的最低位写1。
-        OLED_SCLK_Clr();//拉低时钟线，为读取下一位数据做准备。
-    }
-    return Data;//返回读取的一个字节数据。
-}
-
+#include "iic.h"
 /*******************************************************************************
 函数名: Set_ShowPos
 函数作用:要显示内容的位置
@@ -189,40 +27,6 @@ void OLED_Set_Pos(u8 x, u8 y)
     Write_IIC_Command(((x&0xf0)>>4)|0x10);
     Write_IIC_Command(x&0x0f);//Write_IIC_Command((x&0x0f)|0x01);
 }
-/*******************************************************************************
-函数名: Disp_Point
-函数作用:显示点
-输入参数:x:横坐标,y:纵坐标
-返回参数:NULL
-*******************************************************************************/
-void Disp_Point(void)
-{
-    
-    IIC_Start();
-    Write_IIC_Byte(0x78);			//D/C#=0; R/W#=0
-    Write_IIC_Byte(0x40);			//write data
-
-    if(version_number)
-    {
-
-        OLED_SCLK_Clr_1();
-        OLED_SDIN_Clr_1();
-        OLED_SCLK_Set_1();
-        OLED_SCLK_Clr_1();
-        OLED_SCLK_Set_1();
-    }
-    else
-    {
-
-        OLED_SCLK_Clr();//接口时钟信号
-        OLED_SDIN_Clr();//接口数据信号
-        OLED_SCLK_Set();   
-        OLED_SCLK_Clr();
-        OLED_SCLK_Set();
-    }
-    IIC_Stop();
-}
-
 /*******************************************************************************
 函数名: Oled_DrawArea
 函数作用:显示一个区域

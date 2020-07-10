@@ -68,7 +68,7 @@ static void SetSysClockTo72MHz(void);
 /*******************************************************************************
 *  Clock Definitions
 *******************************************************************************/
-u32 SystemCoreClock   = 72000000; // 72MHz System Clock Frequency
+u32 SystemCoreClock   = 8000000; // 72MHz System Clock Frequency
 u8  AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 
 void SystemInit (void)
@@ -141,7 +141,7 @@ static void SetSysClockTo72MHz(void)
     RCC->CFGR  |= RCC_CFGR_PPRE1_DIV2;/* PCLK1 = HCLK */
     /*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
     RCC->CFGR  &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMULL);
-    RCC->CFGR  |= (u32)(RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMULL9);
+    RCC->CFGR  |= (u32)(RCC_CFGR_PLLSRC_HSE /*| RCC_CFGR_PLLMULL9*/);
     RCC->CR    |= RCC_CR_PLLON;/* Enable PLL */
     while((RCC->CR & RCC_CR_PLLRDY) == 0){}/* Wait till PLL is ready */
     /* Select PLL as system clock source */
