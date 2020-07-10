@@ -14,9 +14,9 @@ History:
 #define SI_COE         16//56
 #define SI_THRESHOLD   60
 
-#define VIN  0
-#define VBTY 1
-#define VCUR 2
+#define VIN  0  //输入电压
+#define VBTY 1  //电池电压
+#define VCUR 2  //电流
 #define ADC1_DR_Address ((u32)0x4001244C)
 
 u16 Get_AdcValue(u8 i);

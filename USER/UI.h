@@ -17,5 +17,4 @@ void Low_Power(void);
 void Show_SetLv(u8 gear);
 void Clear_Screw(void);
 void Show_ScrewMove(u8 status);
-void Print_Integer(s32 data,u8 posi);
 /******************************** END OF FILE *********************************/

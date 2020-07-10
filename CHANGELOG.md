@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.10] - 2019.02.25
+
 ## [v1.7a] - 2018.01.09
 
 - As an upgraded version of 1.7, the compatibility of the firmware on ES120 and ES121 was improved based on the original function;
@@ -19,7 +21,8 @@
 - when charging, the current capacity can be displayed, and the battery is completely filled, that is, the battery is full;
 - remove the P gear.
 
-[unreleased]: https://github.com/cilynx/es120/compare/v1.7a...HEAD
+[unreleased]: https://github.com/cilynx/es120/compare/v1.10...HEAD
+[v1.10]: https://github.com/cilynx/es120/compare/v1.7a...v1.10
 [v1.7a]: https://github.com/cilynx/es120/compare/v1.8...v1.7a
 [v1.8]: https://github.com/cilynx/es120/compare/v1.7...v1.8
 [v1.7]: https://github.com/cilynx/es120/releases/tag/v1.7

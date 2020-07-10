@@ -19,6 +19,6 @@
 @REM 
 
 
-"C:\Program Files\IAR Systems\Embedded Workbench 6.4\common\bin\cspybat" "C:\Program Files\IAR Systems\Embedded Workbench 6.4\arm\bin\armproc.dll" "C:\Program Files\IAR Systems\Embedded Workbench 6.4\arm\bin\armsim2.dll"  %1 --plugin "C:\Program Files\IAR Systems\Embedded Workbench 6.4\arm\bin\armbat.dll" --macro "C:\Program Files\IAR Systems\Embedded Workbench 6.4\arm\config\debugger\ST\Trace_STM32F1xx.dmac" --backend -B "--endian=little" "--cpu=Cortex-M3" "--fpu=None" "-p" "C:\Program Files\IAR Systems\Embedded Workbench 6.4\arm\CONFIG\debugger\ST\STM32F103x8.ddf" "--semihosting" "--device=STM32F103x8" 
+"D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\common\bin\cspybat" "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\bin\armproc.dll" "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\bin\armstlink.dll"  %1 --plugin "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\bin\armbat.dll" --macro "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\config\debugger\ST\Trace_STM32F1xx.dmac" --flash_loader "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\config\flashloader\ST\FlashSTM32F10xx8.board" --backend -B "--endian=little" "--cpu=Cortex-M3" "--fpu=None" "-p" "D:\Program Files (x86)\IAR Systems\Embedded Workbench 6.4\arm\CONFIG\debugger\ST\STM32F103x8.ddf" "--semihosting" "--device=STM32F103x8" "--stlink_interface=SWD" "--stlink_reset_strategy=0,0" "--drv_swo_clock_setup=72000000,0,2000000" 
 
 

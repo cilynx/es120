@@ -29,7 +29,7 @@ typedef struct {
 }INFO_SYS;
 
 #define TURBO_ON()  GPIO_SetBits(GPIOA,GPIO_Pin_10);
-#define TURBO_OFF() GPIO_ResetBits(GPIOA,GPIO_Pin_10);
+//#define TURBO_OFF() GPIO_ResetBits(GPIOA,GPIO_Pin_10);
 
 #define POWER_ON()  GPIO_SetBits(GPIOB,GPIO_Pin_4)
 #define POWER_OFF() GPIO_ResetBits(GPIOB,GPIO_Pin_4)
@@ -39,7 +39,7 @@ typedef struct {
 
 #define SHOTDOWN_TIME   1500    //关机时间单位10毫秒
 
-extern volatile u32 gTimer[6];
+extern volatile u32 gTimer[7];
 extern vu8 gKey_Press;
 extern u8 keypress_cnt;
 
@@ -60,6 +60,7 @@ u32 Timer_StartValue(void);
 u32 Elapse_Value(u32 start,u32 cur);
 void PWM_Init(u16 arr,u16 psc,u8 version);
 void Version_Modify(void);
-
+void TURBO_OFF(void);
+u8 Is_Turbo_On(void);
 #endif
 /******************************** END OF FILE *********************************/

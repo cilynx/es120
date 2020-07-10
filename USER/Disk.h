@@ -35,7 +35,6 @@ History:
 extern u8 gCalib_flag;
 extern u32 gMoto_timecnt;
 
-
 #define HEX            0
 #define BIN            2
 #define SET            1

@@ -33,7 +33,8 @@ extern u32 current_limt;
 int main(void)
 {
     Setup();/*Setup*/
-    while(1) {
+    while(1) 
+    {
         Clear_Watchdog();//重置看门狗     
         Mode_Switching();//状态转换
     }
@@ -46,13 +47,14 @@ int main(void)
 *******************************************************************************/
 void Setup(void)
 {     
-    RCC_Config();
-    Delay_Init();
+    RCC_Config();//时钟初始化
+    Delay_Init();//初始化延迟函数
     GPIO_Config();
-    NVIC_Configuration();
+    NVIC_Configuration();//NVIC初始化
     Adc_Init();
-    Delay_Ms(10);	
-    if(Get_Adc(VIN) > 500) {//有USB
+    Delay_Ms(10);
+    if(Get_Adc(VIN) > 500)
+    {//有USB
         USB_Port(DISABLE);
         Delay_Ms(200);
         USB_Port(ENABLE);
@@ -62,7 +64,7 @@ void Setup(void)
     Disk_BuffInit();//U盘内容读取
     Config_Analysis();//启动虚拟U盘
     Init_L3G4200D();//初始化L3G4200D
-    Init_Timer2();
+    Init_Timer2();//初始化定时器2
     PWM_Init(2400,0,0);//20k
     Init_Oled();//初始化OLED
     Clear_Screen();
@@ -79,11 +81,14 @@ void Setup(void)
     else
     {
         version_number = 1;//1.3版本
-        Version_Modify();   
+        Version_Modify();
     }
     
-    current_limt = (MAX_ROTATE_I - ((info_def.torque_level - 1))*GEARS_UNIT_I);//根据挡位计算电流
-    Set_CurLimit(current_limt,0);//adc看门狗界限
+    if(info_def.torque_level != 1 && info_def.torque_level != 0)
+    {
+        current_limt = (MAX_ROTATE_I - ((info_def.torque_level - 2)) * GEARS_UNIT_I);//根据挡位计算电流
+    }
+    else        current_limt = 1800;
+    Set_CurLimit(current_limt, 0);//adc看门狗界限
 }
-
 /*********************************END OF FILE*********************************/

@@ -7,6 +7,7 @@ Data:            2017/11/22
 History:
 *******************************************************************************/
 #include "Delay.h"
+extern u8 frequency_pos;
 
 static u8  fac_us=0;//us延时倍乘数
 static u16 fac_ms=0;//ms延时倍乘数
@@ -19,7 +20,8 @@ static u16 fac_ms=0;//ms延时倍乘数
 void Delay_Init(void)
 {
     SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);	//选择外部时钟  HCLK/8
-    fac_us=72/8;		    
+    if(frequency_pos == 1)      fac_us = 48 / 8;
+    else                        fac_us = 8 / 8;
     fac_ms=(u16)fac_us*1000;
 }								    
 /*******************************************************************************
@@ -35,8 +37,9 @@ void Delay_Ms(u16 nms)
     SysTick->LOAD = (u32)nms*fac_ms;//时间加载(SysTick->LOAD为24bit)
     SysTick->VAL  = 0x00;           //清空计数器
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk ;          //开始倒数  
-    do{
-              temp = SysTick->CTRL;
+    do
+    {
+        temp = SysTick->CTRL;
     }while(temp & 0x01 && !(temp & (1<<16)));//等待时间到达   
     SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;       //关闭计数器
     SysTick->VAL = 0X00;       //清空计数器	  	    

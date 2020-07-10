@@ -10,7 +10,7 @@ History:
 *******************************************************************************/
 #include "app.h"
 #include "iic.h"
-
+extern u8 frequency_pos;
 extern u8 version_number;
 /*******************************************************************************
 * Function Name  : I2C_delay
@@ -21,12 +21,10 @@ extern u8 version_number;
 *******************************************************************************/
 void I2C_delay(void)
 {
-    u8 i=20; //这里可以优化速度	，经测试最低到5还能写入
-    while(i) {
+    vu8 i=1;
+    while(i)
         i--;
-    }
 }
-
 /*******************************************************************************
 * Function Name  : delay5ms
 * Description    : Simulation IIC 5 series delay
@@ -37,9 +35,8 @@ void I2C_delay(void)
 void delay5ms(void)
 {
     int i=50;
-    while(i) {
+    while(i)
         i--;
-    }
 }
 /*******************************************************************************
 * Function Name  : I2C_Start
@@ -49,16 +46,16 @@ void delay5ms(void)
 * Return         : Wheather	 Start
 *******************************************************************************/
 u8 I2C_Start(void)
-{   
+{
     if(version_number)
     {
         SDA_H_1;
         SCL_H_1;
         I2C_delay();
-        if(!SDA_read_1)return FALSE;	//SDA线为低电平则总线忙,退出
+        if(!SDA_read_1)         return FALSE;	//SDA线为低电平则总线忙,退出
         SDA_L_1;
         I2C_delay();
-        if(SDA_read_1) return FALSE;	//SDA线为高电平则总线出错,退出
+        if(SDA_read_1)          return FALSE;	//SDA线为高电平则总线出错,退出
         SDA_L_1;
         I2C_delay();
         return TRUE;
@@ -68,10 +65,10 @@ u8 I2C_Start(void)
         SDA_H;
         SCL_H;
         I2C_delay();
-        if(!SDA_read)return FALSE;	//SDA线为低电平则总线忙,退出
+        if(!SDA_read)           return FALSE;	//SDA线为低电平则总线忙,退出
         SDA_L;
         I2C_delay();
-        if(SDA_read) return FALSE;	//SDA线为高电平则总线出错,退出
+        if(SDA_read)            return FALSE;	//SDA线为高电平则总线出错,退出
         SDA_L;
         I2C_delay();
         return TRUE;
@@ -90,12 +87,12 @@ void Write_IIC_Byte(unsigned char IIC_Byte)
     
     if(version_number)//1.3版本
     {
-        for(i=0; i<8; i++) {
+        for(i=0; i<8; i++) 
+        {
             OLED_SCLK_Clr_1();
-            if(IIC_Byte & 0x80) {
-                OLED_SDIN_Set_1();
-            } else OLED_SDIN_Clr_1();
-            IIC_Byte<<=1;
+            if(IIC_Byte & 0x80)         OLED_SDIN_Set_1();
+            else                        OLED_SDIN_Clr_1();
+            IIC_Byte <<= 1;
             OLED_SCLK_Set_1();
         }
         OLED_SCLK_Clr_1();
@@ -103,16 +100,24 @@ void Write_IIC_Byte(unsigned char IIC_Byte)
     }
     else//1.4版本
     {
-        for(i=0; i<8; i++) {
+        for(i=0; i<8; i++) 
+        {
             OLED_SCLK_Clr();//接口时钟信号
-            if(IIC_Byte & 0x80) {
+            //I2C_delay();
+            if(IIC_Byte & 0x80) 
+            {
                 OLED_SDIN_Set();//接口数据信号
-            } else OLED_SDIN_Clr();
-            IIC_Byte<<=1;
+            } 
+            else        OLED_SDIN_Clr();
+            IIC_Byte <<= 1;
+            I2C_delay();
             OLED_SCLK_Set();
+            I2C_delay();
         }
         OLED_SCLK_Clr();
+        I2C_delay();
         OLED_SCLK_Set() ;
+        I2C_delay();       
     }
 }
 /*******************************************************************************
@@ -143,6 +148,15 @@ void Write_IIC_Data(unsigned char IIC_Data)
     Write_IIC_Byte(0x78);       //D/C#=0; R/W#=0
     Write_IIC_Byte(0x40);       //write data
     Write_IIC_Byte(IIC_Data);
+    I2C_Stop();
+}
+
+void Write_IIC_PageData(unsigned char *buf, u8 cnt)
+{
+    I2C_Start();
+    Write_IIC_Byte(0x78);       //D/C#=0; R/W#=0
+    Write_IIC_Byte(0x40);       //write data
+    while(cnt--)                Write_IIC_Byte(*buf++);
     I2C_Stop();
 }
 /*******************************************************************************
@@ -258,7 +272,8 @@ u8 I2C_WaitAck(void) 	 //返回为:=1有ACK,=0无ACK
         I2C_delay();
         SCL_H_1;
         I2C_delay();
-        if(SDA_read_1) {
+        if(SDA_read_1) 
+        {
             SCL_L_1;
             I2C_delay();
             return FALSE;
@@ -275,7 +290,8 @@ u8 I2C_WaitAck(void) 	 //返回为:=1有ACK,=0无ACK
         I2C_delay();
         SCL_H;
         I2C_delay();
-        if(SDA_read) {
+        if(SDA_read) 
+        {
             SCL_L;
             I2C_delay();
             return FALSE;
@@ -297,13 +313,12 @@ void I2C_SendByte(u8 SendByte) //数据从高位到低位//
     u8 i=8;
     if(version_number)
     {
-        while(i--) {
+        while(i--) 
+        {
             SCL_L_1;
             I2C_delay();
-            if(SendByte&0x80)
-                SDA_H_1;
-            else
-                SDA_L_1;
+            if(SendByte&0x80)   SDA_H_1;
+            else                SDA_L_1;
             SendByte<<=1;
             I2C_delay();
             SCL_H_1;
@@ -313,13 +328,12 @@ void I2C_SendByte(u8 SendByte) //数据从高位到低位//
     }
     else
     {
-        while(i--) {
+        while(i--) 
+        {
             SCL_L;
             I2C_delay();
-            if(SendByte&0x80)
-                SDA_H;
-            else
-                SDA_L;
+            if(SendByte&0x80)   SDA_H;
+            else                SDA_L;
             SendByte<<=1;
             I2C_delay();
             SCL_H;
@@ -341,17 +355,16 @@ u8 I2C_RadeByte(void)  //数据从高位到低位//
     u8 ReceiveByte=0;
     
     if(version_number)
-    {   
+    {
         SDA_H_1;
-        while(i--) {
+        while(i--) 
+        {
             ReceiveByte<<=1;
             SCL_L_1;
             I2C_delay();
             SCL_H_1;
             I2C_delay();
-            if(SDA_read_1) {
-                ReceiveByte|=0x01;
-            }
+            if(SDA_read_1)      ReceiveByte|=0x01;
         }
         SCL_L_1;
         return ReceiveByte;
@@ -359,15 +372,14 @@ u8 I2C_RadeByte(void)  //数据从高位到低位//
     else
     {
         SDA_H;
-        while(i--) {
+        while(i--) 
+        {
             ReceiveByte<<=1;
             SCL_L;
             I2C_delay();
             SCL_H;
             I2C_delay();
-            if(SDA_read) {
-                ReceiveByte|=0x01;
-            }
+            if(SDA_read)        ReceiveByte|=0x01;
         }
         SCL_L;
         return ReceiveByte;
@@ -380,23 +392,24 @@ u8 I2C_RadeByte(void)  //数据从高位到低位//
 * Output         : None
 * Return         : TURE OR FALSE
 *******************************************************************************/
-u8 Single_Write(u8 SlaveAddress,u8 REG_Address,u8 REG_data)		   
+u8 Single_Write(u8 SlaveAddress, u8 REG_Address, u8 REG_data)		   
 {
-    if(!I2C_Start())  return FALSE;
+    if(!I2C_Start())    return FALSE;
     I2C_SendByte(SlaveAddress);   //发送设备地址+写信号//I2C_SendByte(((REG_Address & 0x0700) >>7) | SlaveAddress & 0xFFFE);//设置高起始地址+器件地址
-    if(!I2C_WaitAck()) {
+    if(!I2C_WaitAck()) 
+    {
         I2C_Stop();
         return FALSE;
     }
-    I2C_SendByte(REG_Address );   //设置低起始地址
+    I2C_SendByte(REG_Address);   //设置低起始地址
     I2C_WaitAck();
     I2C_SendByte(REG_data);
     I2C_WaitAck();
+    
     I2C_Stop();
     delay5ms();
     return TRUE;
 }
-
 /*******************************************************************************
 * Function Name  : Single_Read
 * Description    : Single byte reading
@@ -407,9 +420,10 @@ u8 Single_Write(u8 SlaveAddress,u8 REG_Address,u8 REG_data)
 u8 Single_Read(u8 SlaveAddress,u8 REG_Address)
 {
     u8 REG_data;
-    if(!I2C_Start())return FALSE;
+    if(!I2C_Start())    return FALSE;
     I2C_SendByte(SlaveAddress); //I2C_SendByte(((REG_Address & 0x0700) >>7) | REG_Address & 0xFFFE);//设置高起始地址+器件地址
-    if(!I2C_WaitAck()) {
+    if(!I2C_WaitAck()) 
+    {
         I2C_Stop();
         return FALSE;
     }
@@ -422,8 +436,6 @@ u8 Single_Read(u8 SlaveAddress,u8 REG_Address)
     REG_data= I2C_RadeByte();
     I2C_NoAck();
     I2C_Stop();
-    //return TRUE;
     return REG_data;
-
 }
-
+/******************************** END OF FILE *********************************/

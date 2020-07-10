@@ -18,19 +18,21 @@ History:
 #include "L3G4200D.h"
 #include "iic.h"
 
+extern u8 version_number;
+extern u8 frequency_pos;
 
 u32 gKey_state;
 u32 gKey_gap;
 vu32 gMs_timeout;
-volatile u32 gTimer[6];
-vu32 Timer_Counter;
+volatile u32 gTimer[7];
+vu32 Timer_Counter;//定时器2中断计数10ms,作为开机后的时间轴
 vu32 Moto_TimerCounter;
 vu8 gKey_Press = 0;
+u8 keypress_cnt = 0;
 
+#define SI_DATA 25
 #define KEY_READ     (GPIOB->IDR & GPIO_Pin_7) //按下为1  1.4版本
 #define KEY_READ_1   (GPIOA->IDR & GPIO_Pin_1) //按下为1  1.3版本
-
-
 /*******************************************************************************
 函数名: Init_GTIME
 函数作用:初始化计时器
@@ -40,11 +42,9 @@ vu8 gKey_Press = 0;
 void Init_Gtime(void)
 {
     u8 i;
-    
-    for(i = 0; i < 6; i++)   gTimer[i] = 0;
+    for(i = 0; i < 6; i++)      gTimer[i] = 0;
     gTimer[2] = SHOTDOWN_TIME;//关机时间
 }
-
 /*******************************************************************************
 函数名: USB_Port
 函数作用:设置 USB 设备 IO 端口 
@@ -55,23 +55,25 @@ void USB_Port(u8 state)
 {
     USB_DN_LOW();
     USB_DP_LOW();
-    if(state == DISABLE) {
+    if(state == DISABLE) 
+    {
         USB_DN_OUT();
         USB_DP_OUT();
-    } else {
+    } 
+    else 
+    {
         USB_DN_EN();
         USB_DP_EN();
     }
 }
 /*******************************************************************************
 函数名: Timer_StartValue
-函数作用:记录开始的时间始值
+函数作用:记录开始的时间初始值,获取当前时间
 输入参数:timer
 返回参数:timer
 *******************************************************************************/
 u32 Timer_StartValue(void)
 {
-    // 返回初始值
     return Timer_Counter;
 }
 /*******************************************************************************
@@ -81,16 +83,13 @@ u32 Timer_StartValue(void)
 返回参数: 经过的时间。
 *******************************************************************************/
 u32 Elapse_Value(u32 start,u32 cur)
-{
-    // 根据初始值计算流逝时间。以 ms 为单位
-    if (cur < start) {
-        // 计时器已经回滚
+{// 根据初始值计算流逝时间。以 ms 为单位
+    if (cur < start) 
+    {// 计时器已经回滚
         return 0xffffffff - start + cur;
-    } else {
-        return cur - start;
     }
+    else        return cur - start;
 }
-
 /*******************************************************************************
 函数名: GPIO_Config
 函数作用:GPIO初始化
@@ -108,7 +107,13 @@ void GPIO_Config(void)
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
-
+	
+    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_2;//OLED Rst
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+    GPIO_ResetBits(GPIOB, GPIO_Pin_2);
+		
     GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_4;  //VE
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -187,15 +192,12 @@ void GPIO_Config_1(void)
     GPIO_SetBits(GPIOD,GPIO_Pin_0);
     GPIO_ResetBits(GPIOA,GPIO_Pin_10);
 }
-
-
 /*******************************************************************************
  函数名: FLASH_Prog
  函数作用:写东西到flash
  输入参数:NULL
  返回参数:NULL
-
- PWM 频率计算公式:F = (定时器频率(48M))/((arr + 1)*(psc + 1))     ..TIM_Period = arr;
+ PWM 频率计算公式:F = (定时器频率(48M))/((arr + 1)*(psc + 1)),   TIM_Period = arr;
 *******************************************************************************/
 void PWM_Init(u16 arr,u16 psc,u8 version)
 {
@@ -205,21 +207,18 @@ void PWM_Init(u16 arr,u16 psc,u8 version)
     
     if(version)
     {
-        RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA  | RCC_APB2Periph_AFIO, ENABLE);
       
         GPIO_PinRemapConfig(GPIO_Remap_I2C1,ENABLE);
     }
-    else
-    {
-        RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
-    }    
+    else        RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
    
     GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_8 | GPIO_Pin_9; //PA8 TIM1_CH1,PA9 TIM1_CH2
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-
+    
     TIM_TimeBaseStructure.TIM_Period        = arr - 1;
     TIM_TimeBaseStructure.TIM_Prescaler     = psc;
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;//TIM_CKD_DIV1
@@ -233,12 +232,13 @@ void PWM_Init(u16 arr,u16 psc,u8 version)
         有效电平；在向下计数时，一旦TIMx_CNT>TIMx_CCR1时通道1为有效电平，否则为无效电
         平。
     */
-    TIM_OCInitStructure.TIM_OCMode      = TIM_OCMode_PWM1;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable; 
-    TIM_OCInitStructure.TIM_Pulse       = 0;
-    TIM_OCInitStructure.TIM_OCPolarity  = TIM_OCPolarity_High;
-    TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High; 
+    
+    TIM_OCInitStructure.TIM_OCMode              = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState         = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OutputNState        = TIM_OutputNState_Enable;
+    TIM_OCInitStructure.TIM_Pulse               = 0;
+    TIM_OCInitStructure.TIM_OCPolarity          = TIM_OCPolarity_High;
+    TIM_OCInitStructure.TIM_OCNPolarity         = TIM_OCNPolarity_High;
  
     TIM_OC1Init(TIM1, &TIM_OCInitStructure);
     TIM_OC2Init(TIM1, &TIM_OCInitStructure);
@@ -249,7 +249,6 @@ void PWM_Init(u16 arr,u16 psc,u8 version)
     TIM_ARRPreloadConfig(TIM1, ENABLE);
     TIM_Cmd(TIM1, ENABLE);
     TIM_CtrlPWMOutputs(TIM1, ENABLE);
-  
 }
 /*******************************************************************************
 函数名: Init_Timer2
@@ -262,8 +261,9 @@ void Init_Timer2(void)
     NVIC_InitTypeDef         NVIC_InitStructure;//中断结构体
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;//定时器结构体
 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2  , ENABLE);//时钟使能(打开电源)
-    TIM_TimeBaseStructure.TIM_Prescaler     = 48-1;// (48MHz)/48 = 1MHz   预分频值
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);//时钟使能(打开电源)
+    if(frequency_pos)   TIM_TimeBaseStructure.TIM_Prescaler = 48 - 1;    // (48MHz)/48 = 1MHz
+    else                TIM_TimeBaseStructure.TIM_Prescaler = 8 - 1;
     TIM_TimeBaseStructure.TIM_Period        = 10000-1;// Interrupt per 10mS 下次活动周期
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;//时间分割
     TIM_TimeBaseStructure.TIM_CounterMode   = TIM_CounterMode_Up;//TIM向上计数模式
@@ -274,7 +274,7 @@ void Init_Timer2(void)
 
     NVIC_InitStructure.NVIC_IRQChannel                   = TIM2_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 1;//
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 1;
     NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;//使能
     NVIC_Init(&NVIC_InitStructure);
 }
@@ -324,11 +324,6 @@ void Set_kGap(u32 key_gap)
 输入参数:NULL
 返回参数:NULL
 *******************************************************************************/
-#define SI_DATA 25
-extern u8 version_number;
-
-u8 keypress_cnt = 0;
-
 void Key_Read( void )
 {
     static u16 key_cnt = 0;
@@ -336,37 +331,37 @@ void Key_Read( void )
     static u16 press_key = 0;
     u16 read_data = 0;
     
-    if(version_number == 0 )        read_data = KEY_READ;  //PB7
-    else                            read_data = KEY_READ_1;
+    if(version_number == 0)     read_data = KEY_READ;  //PB7
+    else                        read_data = KEY_READ_1;
     press_key = read_data;//长按
 
     if(version_number)
     {
-        if(press_key == 0x0002){
-        kgap = 0;
-        key_cnt++;
-        }
-    }
-    else
-    {
-        if(press_key == 0x0080 ){
+        if(press_key == 0x0002)
+        {
             kgap = 0;
             key_cnt++;
         }
     }
-    if(key_cnt >= SI_DATA) Set_gKey(KEY_CN | KEY_V1);//设置为长按
+    else
+    {
+        if(press_key == 0x0080 )
+        {
+            kgap = 0;
+            key_cnt++;
+        }
+    }
     
-    if(press_key == 0){
-
-        if(key_cnt < SI_DATA && key_cnt != 0){
+    if(key_cnt >= SI_DATA) Set_gKey(KEY_CN | KEY_V1);//设置为长按
+    if(press_key == 0)
+    {
+        if(key_cnt < SI_DATA && key_cnt != 0)
+        {
             Set_gKey(KEY_V1);//设置案件
-            if(kgap < 10)  keypress_cnt++;//10*20ms
+            if(kgap < 10)       keypress_cnt++;//10*20ms
         }
-
         kgap++;
-        if(kgap >= 10){
-            keypress_cnt = 0;//清除案件计数
-        }
+        if(kgap >= 10)          keypress_cnt = 0;//清除案件计数
         key_cnt = 0;
     }
     Set_kGap(kgap*20);//设置按键时间间隔
@@ -378,12 +373,12 @@ void Key_Read( void )
 返回参数:NULL
 *******************************************************************************/
 void TIM2_IRQHandler(void)
-{
-    /*10ms一个周期*/
+{/*10ms一个周期*/
     static u8 sk = 0; //scan key
     u8 i;
     TIM_ClearITPendingBit(TIM2, TIM_IT_Update);	   // 中断标志复位
-    if(sk++ == 2) {//20ms一次
+    if(sk++ == 2) 
+    {//20ms一次
         Key_Read();
         sk = 0;
     }
@@ -398,7 +393,8 @@ void TIM2_IRQHandler(void)
         else            gKey_Press = 0;
     }
     
-    for(i=0; i<6; i++) if(gTimer[i] > 0) gTimer[i]--;
+    for(i=0; i<6; i++) 
+        if(gTimer[i] > 0)       gTimer[i]--;
     Timer_Counter++;
 }
 /*******************************************************************************
@@ -435,7 +431,6 @@ u32 Clear_Watchdog(void)
     IWDG_ReloadCounter();
     return 1;
 }
-
 /*******************************************************************************
 函数名: version_Init
 函数作用:1.3版本配置修改
@@ -450,7 +445,8 @@ void Version_Modify(void)
     NVIC_Configuration();
     Adc_Init();
 
-    if(Get_Adc(VIN) > 500) {//有USB
+    if(Get_Adc(VIN) > 500) 
+    {//有USB
         USB_Port(DISABLE);
         Delay_Ms(200);
         USB_Port(ENABLE);
@@ -465,7 +461,6 @@ void Version_Modify(void)
     Init_Oled();			//初始化OLED
     Clear_Screen();
     Read_MtCnt();//读取电机转动时间
-    
     Init_Gtime();   //初始化Gtime[]
     Set_gKey(NO_KEY);
     Start_Watchdog(3000);
